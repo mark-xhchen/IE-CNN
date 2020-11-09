@@ -11,41 +11,43 @@ import os
 def load_w2v(w2v_file, embedding_dim, debug=False):
     fp = open(w2v_file)
     words, _ = map(int, fp.readline().split())
-    
+
     w2v = []
     # [0,0,...,0] represent absent words
     w2v.append([0.] * embedding_dim)
     word_dict = dict()
-    print 'load word_embedding...'
-    print 'word: {} embedding_dim: {}'.format(words, embedding_dim)
+    print('load word_embedding...')
+    print('word: {} embedding_dim: {}'.format(words, embedding_dim))
     cnt = 0
     for line in fp:
         cnt += 1
         line = line.split()
         if len(line) != embedding_dim + 1:
-            print 'a bad word embedding: {}'.format(line[0])
+            print('a bad word embedding: {}'.format(line[0]))
             continue
         word_dict[line[0]] = cnt
         w2v.append([float(v) for v in line[1:]])
-    print 'done!'
+    print('done!')
     w2v = np.asarray(w2v, dtype=np.float32)
     #w2v -= np.mean(w2v, axis = 0) # zero-center
     #w2v /= np.std(w2v, axis = 0)
     if debug:
-        print 'shape of w2v:',np.shape(w2v)
+        print('shape of w2v:',np.shape(w2v))
         word='the'
-        print 'id of \''+word+'\':',word_dict[word]
-        print 'vector of \''+word+'\':',w2v[word_dict[word]]
+        print('id of \''+word+'\':',word_dict[word])
+        print('vector of \''+word+'\':',w2v[word_dict[word]])
     return word_dict, w2v
 
-#用于生成minibatch训练数据
+
 def batch_index(length, batch_size, test=False):
-    index = range(length)
-    if not test: np.random.shuffle(index)
-    for i in xrange(int( (length + batch_size -1) / batch_size ) ):
+    index = np.array(range(length))
+    if not test:
+        np.random.shuffle(index)
+    for i in range(int((length + batch_size - 1) / batch_size)):
         ret = index[i * batch_size : (i + 1) * batch_size]
         if not test and len(ret) < batch_size : break
         yield ret
+
 
 # tf functions
 class Saver(object):
@@ -95,10 +97,10 @@ def tf_load_w2v(w2v_file, embedding_dim, embedding_type):
 #     else:  # Random and Trainable
 #         word_embedding = get_weight_varible(shape=w2v.shape, name='word_embedding')
 #     embed0 = tf.Variable(np.zeros([1, embedding_dim]), dtype=tf.float32, name="embed0", trainable=False)
-#     return word_id_mapping, tf.concat((embed0, word_embedding), 0) 
+#     return word_id_mapping, tf.concat((embed0, word_embedding), 0)
 
 def getmask(length, max_len, out_shape):
-    ''' 
+    '''
     length shape:[batch_size]
     '''
     ret = tf.cast(tf.sequence_mask(length, max_len), tf.float32)
@@ -106,7 +108,7 @@ def getmask(length, max_len, out_shape):
 
 #实际运行比biLSTM更快
 def biLSTM_multigpu(inputs,length,n_hidden,scope):
-    ''' 
+    '''
     input shape:[batch_size, max_len, embedding_dim]
     length shape:[batch_size]
     return shape:[batch_size, max_len, n_hidden*2]
@@ -119,13 +121,13 @@ def biLSTM_multigpu(inputs,length,n_hidden,scope):
         dtype=tf.float32,
         scope=scope
     )
-    
+
     max_len = tf.shape(inputs)[1]
     mask = getmask(length, max_len, [-1, max_len, 1])
     return tf.concat(outputs, 2) * mask
 
 def LSTM_multigpu(inputs,length,n_hidden,scope):
-    ''' 
+    '''
     input shape:[batch_size, max_len, embedding_dim]
     length shape:[batch_size]
     return shape:[batch_size, max_len, n_hidden*2]
@@ -137,13 +139,13 @@ def LSTM_multigpu(inputs,length,n_hidden,scope):
         dtype=tf.float32,
         scope=scope
     )
-    
+
     max_len = tf.shape(inputs)[1]
     mask = getmask(length, max_len, [-1, max_len, 1])
     return outputs * mask
 
 def biLSTM_multigpu_last(inputs,length,n_hidden,scope):
-    ''' 
+    '''
     input shape:[batch_size, max_len, embedding_dim]
     length shape:[batch_size]
     return shape:[batch_size, max_len, n_hidden*2]
@@ -162,16 +164,16 @@ def biLSTM_multigpu_last(inputs,length,n_hidden,scope):
 
     index = tf.range(0, batch_size) * max_len + tf.maximum((length - 1), 0)
     fw_last = tf.gather(tf.reshape(outputs[0], [-1, n_hidden]), index)  # batch_size * n_hidden
-    index = tf.range(0, batch_size) * max_len 
+    index = tf.range(0, batch_size) * max_len
     bw_last = tf.gather(tf.reshape(outputs[1], [-1, n_hidden]), index)  # batch_size * n_hidden
-    
+
     return tf.concat([fw_last, bw_last], 1)
 
-   
+
 
 
 def biLSTM(inputs,length,n_hidden,scope):
-    ''' 
+    '''
     input shape:[batch_size, max_len, embedding_dim]
     length shape:[batch_size]
     return shape:[batch_size, max_len, n_hidden*2]
@@ -184,7 +186,7 @@ def biLSTM(inputs,length,n_hidden,scope):
         dtype=tf.float32,
         scope=scope
     )
-    
+
     return tf.concat(outputs, 2)
 
 def LSTM(inputs,sequence_length,n_hidden,scope):
@@ -198,7 +200,7 @@ def LSTM(inputs,sequence_length,n_hidden,scope):
     return outputs
 
 def att_avg(inputs, length):
-    ''' 
+    '''
     input shape:[batch_size, max_len, n_hidden]
     length shape:[batch_size]
     return shape:[batch_size, n_hidden]
@@ -210,7 +212,7 @@ def att_avg(inputs, length):
     return inputs / length
 
 def softmax_by_length(inputs, length):
-    ''' 
+    '''
     input shape:[batch_size, 1, max_len]
     length shape:[batch_size]
     return shape:[batch_size, 1, max_len]
@@ -221,7 +223,7 @@ def softmax_by_length(inputs, length):
     return inputs / _sum
 
 def att_var(inputs,length,w1,b1,w2):
-    ''' 
+    '''
     input shape:[batch_size, max_len, n_hidden]
     length shape:[batch_size]
     return shape:[batch_size, n_hidden]
@@ -231,7 +233,7 @@ def att_var(inputs,length,w1,b1,w2):
     u = tf.tanh(tf.matmul(tmp, w1) + b1)
     alpha = tf.reshape(tf.matmul(u, w2), [-1, 1, max_len])
     alpha = softmax_by_length(alpha, length)
-    return tf.reshape(tf.matmul(alpha, inputs), [-1, n_hidden]) 
+    return tf.reshape(tf.matmul(alpha, inputs), [-1, n_hidden])
 
 def average_gradients(tower_grads):
     average_grads = []
