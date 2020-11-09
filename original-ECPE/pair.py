@@ -14,7 +14,7 @@ from utils.prepare_data import *
 FLAGS = tf.app.flags.FLAGS
 # >>>>>>>>>>>>>>>>>>>> For Model <<<<<<<<<<<<<<<<<<<< #
 ## embedding parameters ##
-tf.app.flags.DEFINE_string('w2v_file', '../data/w2v_200.txt', 'embedding file')
+tf.app.flags.DEFINE_string('w2v_file', '../data_rand/w2v_200.txt', 'embedding file')
 tf.app.flags.DEFINE_integer('embedding_dim', 200, 'dimension of word embedding')
 tf.app.flags.DEFINE_integer('embedding_dim_pos', 50, 'dimension of position embedding')
 ## input struct ##
@@ -42,7 +42,7 @@ def build_model(word_embedding, pos_embedding, x, sen_len, keep_prob1, keep_prob
     inputs = tf.nn.dropout(inputs, keep_prob=keep_prob1)
     sen_len = tf.reshape(sen_len, [-1])
     def get_s(inputs, name):
-        with tf.name_scope('word_encode'):  
+        with tf.name_scope('word_encode'):
             inputs = RNN(inputs, sen_len, n_hidden=FLAGS.n_hidden, scope=FLAGS.scope+'word_layer' + name)
         with tf.name_scope('word_attention'):
             sh2 = 2 * FLAGS.n_hidden
@@ -60,7 +60,7 @@ def build_model(word_embedding, pos_embedding, x, sen_len, keep_prob1, keep_prob
     w_pair = get_weight_varible('softmax_w_pair', [4 * FLAGS.n_hidden + FLAGS.embedding_dim_pos, FLAGS.n_class])
     b_pair = get_weight_varible('softmax_b_pair', [FLAGS.n_class])
     pred_pair = tf.nn.softmax(tf.matmul(s1, w_pair) + b_pair)
-        
+
     reg = tf.nn.l2_loss(w_pair) + tf.nn.l2_loss(b_pair)
     return pred_pair, reg
 
@@ -84,12 +84,12 @@ def run():
     print_time()
     tf.reset_default_graph()
     # Model Code Block
-    word_idx_rev, word_id_mapping, word_embedding, pos_embedding = load_w2v(FLAGS.embedding_dim, FLAGS.embedding_dim_pos, 'data_combine/clause_keywords.csv', FLAGS.w2v_file)
+    word_idx_rev, word_id_mapping, word_embedding, pos_embedding = load_w2v(FLAGS.embedding_dim, FLAGS.embedding_dim_pos, '../data_rand/clause_keywords.csv', FLAGS.w2v_file)
     word_embedding = tf.constant(word_embedding, dtype=tf.float32, name='word_embedding')
     pos_embedding = tf.constant(pos_embedding, dtype=tf.float32, name='pos_embedding')
 
     print('build model...')
-    
+
     x = tf.placeholder(tf.int32, [None, 2, FLAGS.max_sen_len])
     sen_len = tf.placeholder(tf.int32, [None, 2])
     keep_prob1 = tf.placeholder(tf.float32)
@@ -97,25 +97,25 @@ def run():
     distance = tf.placeholder(tf.int32, [None])
     y = tf.placeholder(tf.float32, [None, FLAGS.n_class])
     placeholders = [x, sen_len, keep_prob1, keep_prob2, distance, y]
-    
-    
+
+
     pred_pair, reg = build_model(word_embedding, pos_embedding, x, sen_len, keep_prob1, keep_prob2, distance, y)
     loss_op = - tf.reduce_mean(y * tf.log(pred_pair)) + reg * FLAGS.l2_reg
     optimizer = tf.train.AdamOptimizer(learning_rate=FLAGS.learning_rate).minimize(loss_op)
-    
+
     true_y_op = tf.argmax(y, 1)
     pred_y_op = tf.argmax(pred_pair, 1)
     acc_op = tf.reduce_mean(tf.cast(tf.equal(true_y_op, pred_y_op), tf.float32))
     print('build model done!\n')
-    
+
     # Training Code Block
     print_training_info()
-    tf_config = tf.ConfigProto()  
+    tf_config = tf.ConfigProto()
     tf_config.gpu_options.allow_growth = True
     with tf.Session(config=tf_config) as sess:
         keep_rate_list, acc_subtask_list, p_pair_list, r_pair_list, f1_pair_list = [], [], [], [], []
         o_p_pair_list, o_r_pair_list, o_f1_pair_list = [], [], []
-        
+
         for fold in range(1,11):
             sess.run(tf.global_variables_initializer())
             # train for one fold
@@ -125,7 +125,7 @@ def run():
             test_file_name = 'fold{}_test.txt'.format(fold)
             tr_pair_id_all, tr_pair_id, tr_y, tr_x, tr_sen_len, tr_distance = load_data_2nd_step(save_dir + train_file_name, word_id_mapping, max_sen_len = FLAGS.max_sen_len)
             te_pair_id_all, te_pair_id, te_y, te_x, te_sen_len, te_distance = load_data_2nd_step(save_dir + test_file_name, word_id_mapping, max_sen_len = FLAGS.max_sen_len)
-            
+
             max_acc_subtask, max_f1 = [-1.]*2
             print('train docs: {}    test docs: {}'.format(len(tr_x), len(te_x)))
             for i in xrange(FLAGS.training_iter):
@@ -143,7 +143,7 @@ def run():
                 if acc > max_acc_subtask:
                     max_acc_subtask = acc
                 print('max_acc_subtask: {:.4f} \n'.format(max_acc_subtask))
-                
+
                 # p, r, f1, o_p, o_r, o_f1, keep_rate = prf_2nd_step(te_pair_id_all, te_pair_id, pred_y, fold, save_dir)
                 p, r, f1, o_p, o_r, o_f1, keep_rate = prf_2nd_step(te_pair_id_all, te_pair_id, pred_y)
                 if f1 > max_f1:
@@ -153,7 +153,7 @@ def run():
                 print('test p {:.4f} r {:.4f} f1 {:.4f}'.format(p, r, f1))
 
                 print('max_p {:.4f} max_r {:.4f} max_f1 {:.4f}\n'.format(max_p, max_r, max_f1))
-                
+
 
             print 'Optimization Finished!\n'
             print('############# fold {} end ###############'.format(fold))
@@ -166,8 +166,8 @@ def run():
             o_p_pair_list.append(o_p)
             o_r_pair_list.append(o_r)
             o_f1_pair_list.append(o_f1)
-            
-              
+
+
         print_training_info()
         all_results = [acc_subtask_list, keep_rate_list, p_pair_list, r_pair_list, f1_pair_list, o_p_pair_list, o_r_pair_list, o_f1_pair_list]
         acc_subtask, keep_rate, p_pair, r_pair, f1_pair, o_p_pair, o_r_pair, o_f1_pair = map(lambda x: np.array(x).mean(), all_results)
@@ -177,10 +177,10 @@ def run():
         print('\nFiltered pair_predict: test f1 in 10 fold: {}'.format(np.array(f1_pair_list).reshape(-1,1)))
         print('average : p {:.4f} r {:.4f} f1 {:.4f}\n'.format(p_pair, r_pair, f1_pair))
         print_time()
-        
-     
+
+
 def main(_):
-    
+
     # FLAGS.log_file_name = 'step2.log'
     FLAGS.training_iter=20
 
@@ -190,8 +190,8 @@ def main(_):
         FLAGS.scope= scope_name + '_2'
         run()
 
-    
+
 
 
 if __name__ == '__main__':
-    tf.app.run() 
+    tf.app.run()
