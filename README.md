@@ -21,3 +21,10 @@ Step2: Set up the parameters for the programs you want to run and run the progra
 - cd ours-ECPE
 - Change the dataset paths and the parameters as you want
 - python main_cnn.py
+
+Note that if you directly download the repo zip file from the github site, **the downloaded "w2v_200.txt" in directory "data_rand" may not be the correct file.** Please:
+- open the "w2v_200.txt" file in github;
+- right click on the website;
+- choose "save as" to download the correct file, which should be around 80Mb.
+
+If you are cloning the whole repo, the above issue should not be a problem.
