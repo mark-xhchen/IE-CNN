@@ -1,6 +1,6 @@
-This repository contains the code for our COLING 2020 paper:
+This repository contains the code for our COLING 2020 paper\[[pdf](https://www.aclweb.org/anthology/2020.coling-main.18.pdf)\]:
 
-Xinhong Chen, Qing Li, Jianping Wang. A Unified Sequence Labeling Model for Emotion Cause Pair Extraction. COLING 2020.
+Xinhong Chen, Qing Li, Jianping Wang. A Unified Sequence Labeling Model for Emotion Cause Pair Extraction. In Proceedings of the 28th International Conference on Computational Linguistics, page 208-218.
 
 Please cite our paper if you use this code.
 
@@ -12,7 +12,7 @@ Please cite our paper if you use this code.
 ## Usage
 
 Step1: Divide folds
-if you prefer our dataset devision, then please run the following commands, after which you should see 20 files with "fold#_train.txt" and "fold#_test.txt", where "#" should be 1 to 10.
+- if you prefer our dataset devision, then please run the following commands, after which you should see 20 files with "fold#_train.txt" and "fold#_test.txt", where "#" should be 1 to 10.
 - cd data_rand
 - python divide_fold
 
