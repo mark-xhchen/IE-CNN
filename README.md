@@ -28,3 +28,5 @@ Note that if you directly download the repo zip file from the github site, **the
 - choose "save as" to download the correct file, which should be around 80Mb.
 
 If you are cloning the whole repo, the above issue should not be a problem.
+
+If any problems, feel free to contact: xinhong.chen@my.cityu.edu.hk
